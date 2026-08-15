@@ -72,3 +72,9 @@ The platform has been verified with a real authenticated request flow:
 5. Inventory consumes the event and reserves stock (verified quantity: `5 → 3`).
 
 Kafka runs in single-node KRaft mode with consumer-group support enabled.
+
+Run the verified smoke test against a running stack:
+
+```powershell
+.\scripts\smoke-test.ps1
+```
