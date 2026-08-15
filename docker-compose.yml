@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: order_db
+    volumes:
+      - sparelink-postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    ports: ["5435:5432"]
+  kafka:
+    image: apache/kafka-native:3.8.0
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: keycloak
+    volumes:
+      - ./order-service/keycloak/sparelink-realm.json:/opt/keycloak/data/import/sparelink-realm.json:ro
+    ports: ["8080:8080"]
+  catalogue-service:
+    build: ./catalogue-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sparelink_catalogue
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: mysecretpassword
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/sparelink
+    ports: ["8081:8081"]
+  inventory-service:
+    build: ./inventory-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/inventory_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: mysecretpassword
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/sparelink
+    ports: ["8082:8080"]
+  order-service:
+    build: ./order-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/order_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: mysecretpassword
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/sparelink
+      CATALOGUE_SERVICE_URL: http://catalogue-service:8081
+    ports: ["8083:8083"]
+volumes:
+  sparelink-postgres-data:
