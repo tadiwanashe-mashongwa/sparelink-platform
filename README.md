@@ -15,12 +15,16 @@ flowchart LR
     Order -->|HTTP part lookup| Catalogue
     Order -->|order-created| Kafka[(Kafka)]
     Kafka --> Inventory
+    Kafka --> Payment[Payment Service :8084]
+    Payment -->|payment-status-changed| Kafka
+    Kafka --> Order
     Order --> OrderDb[(order_db)]
+    Payment --> PaymentDb[(payment_db)]
     Catalogue --> CatalogueDb[(sparelink_catalogue)]
     Inventory --> InventoryDb[(inventory_db)]
 ```
 
-Each service owns its own database. The three databases run in one local PostgreSQL container only for development convenience.
+Each service owns its own database. The four databases run in one local PostgreSQL container only for development convenience.
 
 ## Start
 
@@ -34,6 +38,12 @@ Stop the local stack:
 docker compose down
 ```
 
+If you already created the PostgreSQL volume before Payment Service was added, create its database once before starting the updated stack:
+
+```powershell
+docker compose exec postgres createdb -U postgres payment_db
+```
+
 ## Local endpoints
 
 | Component | URL |
@@ -42,6 +52,7 @@ docker compose down
 | Catalogue API | http://localhost:8081 |
 | Inventory API | http://localhost:8082 |
 | Order API | http://localhost:8083 |
+| Payment API | http://localhost:8084 |
 | PostgreSQL | localhost:5435 |
 
 Health endpoints:
@@ -50,6 +61,7 @@ Health endpoints:
 http://localhost:8081/actuator/health
 http://localhost:8082/actuator/health
 http://localhost:8083/actuator/health
+http://localhost:8084/actuator/health
 ```
 
 ## Keycloak development users
@@ -63,13 +75,16 @@ The development OAuth client is `sparelink-api`.
 
 ## Verified smoke flow
 
-The platform has been verified with a real authenticated request flow:
+The platform smoke test exercises this authenticated request flow:
 
 1. Create a Catalogue part and add Inventory stock.
 2. Create an order as the Keycloak `customer` user.
 3. Order Service retrieves the part price from Catalogue.
 4. Order Service writes and publishes an `order-created` event through Kafka.
 5. Inventory consumes the event and reserves stock (verified quantity: `5 → 3`).
+
+6. Payment Service consumes the order event and creates a pending payment.
+7. A successful payment publishes `payment-status-changed`, which transitions the order to `PAID`.
 
 Kafka runs in single-node KRaft mode with consumer-group support enabled.
 

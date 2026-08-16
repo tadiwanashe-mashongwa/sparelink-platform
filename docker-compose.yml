@@ -59,5 +59,15 @@ services:
       KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/sparelink
       CATALOGUE_SERVICE_URL: http://catalogue-service:8081
     ports: ["8083:8083"]
+  payment-service:
+    build: ./payment-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/payment_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: mysecretpassword
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+      SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+    ports: ["8084:8084"]
 volumes:
   sparelink-postgres-data:

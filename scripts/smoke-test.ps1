@@ -4,6 +4,7 @@ $keycloakUrl = 'http://localhost:8080'
 $catalogueUrl = 'http://localhost:8081'
 $inventoryUrl = 'http://localhost:8082'
 $orderUrl = 'http://localhost:8083'
+$paymentUrl = 'http://localhost:8084'
 $clientId = 'sparelink-api'
 
 function Get-AccessToken([string]$username, [string]$password) {
@@ -21,7 +22,7 @@ function Get-JwtSubject([string]$token) {
             ConvertFrom-Json).sub
 }
 
-foreach ($endpoint in @($catalogueUrl, $inventoryUrl, $orderUrl)) {
+foreach ($endpoint in @($catalogueUrl, $inventoryUrl, $orderUrl, $paymentUrl)) {
     $health = Invoke-RestMethod -Uri "$endpoint/actuator/health"
     if ($health.status -ne 'UP') {
         throw "Service at $endpoint is not healthy."
@@ -68,4 +69,29 @@ if ($available -ne 3) {
     throw "Expected available stock 3 after reservation, but got $available."
 }
 
-Write-Host "Platform smoke test passed: order $($order.orderId) reserved inventory for part $partId (5 -> 3)."
+$paymentDeadline = (Get-Date).AddSeconds(30)
+do {
+    $payments = Invoke-RestMethod -Uri "$paymentUrl/api/payments/customer/$customerId?size=10"
+    $payment = $payments.content | Where-Object { $_.orderId -eq $order.orderId } | Select-Object -First 1
+    if ($null -eq $payment) { Start-Sleep -Seconds 2 }
+} while (($null -eq $payment) -and ((Get-Date) -lt $paymentDeadline))
+
+if ($null -eq $payment) {
+    throw "Payment Service did not create a payment for order $($order.orderId)."
+}
+
+Invoke-RestMethod -Method Patch -Uri "$paymentUrl/api/payments/$($payment.id)/status" `
+    -ContentType 'application/json' -Body '{"status":"SUCCESS"}' | Out-Null
+
+$orderDeadline = (Get-Date).AddSeconds(30)
+do {
+    $updatedOrder = Invoke-RestMethod -Uri "$orderUrl/api/orders/$($order.orderId)" -Headers $customerHeaders
+    if ($updatedOrder.status -eq 'PAID') { break }
+    Start-Sleep -Seconds 2
+} while ((Get-Date) -lt $orderDeadline)
+
+if ($updatedOrder.status -ne 'PAID') {
+    throw "Expected order $($order.orderId) to be PAID, but got $($updatedOrder.status)."
+}
+
+Write-Host "Platform smoke test passed: order $($order.orderId) reserved inventory (5 -> 3), created payment $($payment.id), and reached PAID."
