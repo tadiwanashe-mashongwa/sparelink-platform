@@ -72,7 +72,7 @@ if ($available -ne 3) {
 
 $paymentDeadline = (Get-Date).AddSeconds(30)
 do {
-    $payments = Invoke-RestMethod -Uri "${paymentUrl}/api/payments/customer/${customerId}?size=10"
+    $payments = Invoke-RestMethod -Uri "${paymentUrl}/api/payments/customer/${customerId}?size=100"
     $payment = $payments.content | Where-Object { $_.orderId -eq $order.orderId } | Select-Object -First 1
     if ($null -eq $payment) { Start-Sleep -Seconds 2 }
 } while (($null -eq $payment) -and ((Get-Date) -lt $paymentDeadline))
