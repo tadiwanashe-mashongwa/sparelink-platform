@@ -1,3 +1,4 @@
+param([ValidateSet('SUCCESS', 'FAILED')] [string]$PaymentStatus = 'SUCCESS')
 $ErrorActionPreference = 'Stop'
 
 $keycloakUrl = 'http://localhost:8080'
@@ -81,17 +82,28 @@ if ($null -eq $payment) {
 }
 
 Invoke-RestMethod -Method Patch -Uri "$paymentUrl/api/payments/$($payment.id)/status" `
-    -ContentType 'application/json' -Body '{"status":"SUCCESS"}' | Out-Null
+    -ContentType 'application/json' -Body ("{`"status`":`"$PaymentStatus`"}") | Out-Null
 
 $orderDeadline = (Get-Date).AddSeconds(30)
 do {
     $updatedOrder = Invoke-RestMethod -Uri "$orderUrl/api/orders/$($order.orderId)" -Headers $customerHeaders
-    if ($updatedOrder.status -eq 'PAID') { break }
+    $expectedOrderStatus = if ($PaymentStatus -eq 'SUCCESS') { 'PAID' } else { 'PAYMENT_FAILED' }
+    if ($updatedOrder.status -eq $expectedOrderStatus) { break }
     Start-Sleep -Seconds 2
 } while ((Get-Date) -lt $orderDeadline)
 
-if ($updatedOrder.status -ne 'PAID') {
-    throw "Expected order $($order.orderId) to be PAID, but got $($updatedOrder.status)."
+if ($updatedOrder.status -ne $expectedOrderStatus) {
+    throw "Expected order $($order.orderId) to be $expectedOrderStatus, but got $($updatedOrder.status)."
 }
 
-Write-Host "Platform smoke test passed: order $($order.orderId) reserved inventory (5 -> 3), created payment $($payment.id), and reached PAID."
+if ($PaymentStatus -eq 'FAILED') {
+    $releaseDeadline = (Get-Date).AddSeconds(30)
+    do {
+        $available = Invoke-RestMethod -Uri "$inventoryUrl/api/inventory/stock/$partId" -Headers $customerHeaders
+        if ($available -eq 5) { break }
+        Start-Sleep -Seconds 2
+    } while ((Get-Date) -lt $releaseDeadline)
+    if ($available -ne 5) { throw "Expected stock 5 after payment failure, but got $available." }
+}
+
+Write-Host "Platform smoke test passed: order $($order.orderId) reserved inventory (5 -> 3), created payment $($payment.id), and reached $expectedOrderStatus."
