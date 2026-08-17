@@ -1,5 +1,7 @@
 # SpareLink Platform
 
+[![Platform CI](https://github.com/tadiwanashe-mashongwa/sparelink-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/tadiwanashe-mashongwa/sparelink-platform/actions/workflows/ci.yml)
+
 Local integration environment for the SpareLink automotive spare-parts microservices.
 
 ## Architecture
