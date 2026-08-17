@@ -144,3 +144,16 @@ Run the platform flows after starting Docker Compose:
 .\scripts\smoke-test.ps1
 .\scripts\smoke-test.ps1 -PaymentStatus FAILED
 ```
+
+## Local quality checks
+
+Run each service suite from its repository before integrating changes:
+
+```powershell
+cd order-service; .\mvnw.cmd test
+cd ..\catalogue-service; .\mvnw.cmd test
+cd ..\inventory-service; .\mvnw.cmd test
+cd ..\payment-service; mvn test
+```
+
+Each service publishes its JaCoCo coverage badge through GitHub Actions. The Payment workflow also produces the coverage report from the same `mvn test` command used locally.
