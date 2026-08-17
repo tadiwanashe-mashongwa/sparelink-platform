@@ -70,5 +70,11 @@ services:
       SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
       KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/sparelink
     ports: ["8084:8084"]
+  frontend:
+    build: ./sparelink-frontend
+    depends_on:
+      - catalogue-service
+      - order-service
+    ports: ["3000:80"]
 volumes:
   sparelink-postgres-data:
