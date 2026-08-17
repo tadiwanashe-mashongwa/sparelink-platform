@@ -27,6 +27,8 @@ flowchart LR
 
 Each service owns its own database. The four databases run in one local PostgreSQL container only for development convenience.
 
+See [the architecture guide](docs/architecture.md) for the request sequence, database ER diagrams, and testing strategy.
+
 ## Start
 
 ```powershell
