@@ -6,7 +6,7 @@ Local integration environment for the SpareLink automotive spare-parts microserv
 
 ```mermaid
 flowchart LR
-    Client -->|JWT| Order[Order Service :8083]
+    Client[SpareLink Frontend :3000] -->|JWT| Order[Order Service :8083]
     Client -->|JWT| Catalogue[Catalogue Service :8081]
     Client -->|JWT| Inventory[Inventory Service :8082]
     Keycloak[Keycloak :8080] --> Order
@@ -51,6 +51,7 @@ docker compose exec postgres createdb -U postgres payment_db
 
 | Component | URL |
 | --- | --- |
+| Frontend PWA | http://localhost:3000 |
 | Keycloak | http://localhost:8080 |
 | Catalogue API | http://localhost:8081 |
 | Inventory API | http://localhost:8082 |
@@ -76,6 +77,10 @@ http://localhost:8084/actuator/health
 | `admin` | `admin` | `ADMIN` |
 
 The development OAuth client is `sparelink-api`.
+
+## Frontend
+
+The customer PWA lives in its own repository: [sparelink-frontend](https://github.com/tadiwanashe-mashongwa/sparelink-frontend). It is included in this Compose stack at http://localhost:3000 and proxies catalogue and order API requests internally.
 
 ## Verified smoke flow
 
