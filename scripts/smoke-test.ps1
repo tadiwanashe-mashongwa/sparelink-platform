@@ -72,7 +72,7 @@ if ($available -ne 3) {
 
 $paymentDeadline = (Get-Date).AddSeconds(30)
 do {
-    $payments = Invoke-RestMethod -Uri "${paymentUrl}/api/payments/customer/${customerId}?size=100"
+    $payments = Invoke-RestMethod -Uri "${paymentUrl}/api/payments/customer/${customerId}?size=100" -Headers $adminHeaders
     $payment = $payments.content | Where-Object { $_.orderId -eq $order.orderId } | Select-Object -First 1
     if ($null -eq $payment) { Start-Sleep -Seconds 2 }
 } while (($null -eq $payment) -and ((Get-Date) -lt $paymentDeadline))
@@ -82,7 +82,7 @@ if ($null -eq $payment) {
 }
 
 Invoke-RestMethod -Method Patch -Uri "$paymentUrl/api/payments/$($payment.id)/status" `
-    -ContentType 'application/json' -Body ("{`"status`":`"$PaymentStatus`"}") | Out-Null
+    -Headers $adminHeaders -ContentType 'application/json' -Body ("{`"status`":`"$PaymentStatus`"}") | Out-Null
 
 $orderDeadline = (Get-Date).AddSeconds(30)
 do {

@@ -68,6 +68,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
       SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/sparelink
     ports: ["8084:8084"]
 volumes:
   sparelink-postgres-data:
