@@ -33,6 +33,12 @@ See [the architecture guide](docs/architecture.md) for the request sequence, dat
 
 ## Start
 
+Create local credentials before starting the stack. `.env` is ignored by Git; use strong values outside local development.
+
+```powershell
+Copy-Item .env.example .env
+```
+
 ```powershell
 docker compose up --build -d
 ```
