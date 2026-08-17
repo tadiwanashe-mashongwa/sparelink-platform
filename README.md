@@ -12,6 +12,7 @@ flowchart LR
     Keycloak[Keycloak :8080] --> Order
     Keycloak --> Catalogue
     Keycloak --> Inventory
+    Keycloak --> Payment
     Order -->|HTTP part lookup| Catalogue
     Order -->|order-created| Kafka[(Kafka)]
     Kafka --> Inventory
@@ -53,6 +54,7 @@ docker compose exec postgres createdb -U postgres payment_db
 | Inventory API | http://localhost:8082 |
 | Order API | http://localhost:8083 |
 | Payment API | http://localhost:8084 |
+| Payment OpenAPI | http://localhost:8084/swagger-ui/index.html |
 | PostgreSQL | localhost:5435 |
 
 Health endpoints:
@@ -82,9 +84,10 @@ The platform smoke test exercises this authenticated request flow:
 3. Order Service retrieves the part price from Catalogue.
 4. Order Service writes and publishes an `order-created` event through Kafka.
 5. Inventory consumes the event and reserves stock (verified quantity: `5 → 3`).
-
 6. Payment Service consumes the order event and creates a pending payment.
 7. A successful payment publishes `payment-status-changed`, which transitions the order to `PAID`.
+
+The failure path is also verified: a failed payment publishes `payment-status-changed`, Order Service transitions the order to `PAYMENT_FAILED`, and Inventory releases the reservation (verified quantity: `3 → 5`).
 
 Kafka runs in single-node KRaft mode with consumer-group support enabled.
 
@@ -92,4 +95,5 @@ Run the verified smoke test against a running stack:
 
 ```powershell
 .\scripts\smoke-test.ps1
+.\scripts\smoke-test.ps1 -PaymentStatus FAILED
 ```
