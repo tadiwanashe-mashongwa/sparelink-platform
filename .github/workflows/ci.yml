@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: ci-test-password
+  POSTGRES_DB: order_db
+  KEYCLOAK_ADMIN_USERNAME: admin
+  KEYCLOAK_ADMIN_PASSWORD: ci-test-password
+
 jobs:
   validate-compose:
     runs-on: ubuntu-latest
