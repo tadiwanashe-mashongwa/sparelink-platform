@@ -70,6 +70,17 @@ services:
       SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
       KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/sparelink
     ports: ["8084:8084"]
+  customer-service:
+    build: ./customer-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/customer_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/sparelink
+    depends_on:
+      - postgres
+      - keycloak
+    ports: ["8085:8085"]
   frontend:
     build: ./sparelink-frontend
     depends_on:

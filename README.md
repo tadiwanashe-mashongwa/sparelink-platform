@@ -11,10 +11,12 @@ flowchart LR
     Client[SpareLink Frontend :3000] -->|JWT| Order[Order Service :8083]
     Client -->|JWT| Catalogue[Catalogue Service :8081]
     Client -->|JWT| Inventory[Inventory Service :8082]
+    Client -->|JWT| Customer[Customer Service :8085]
     Keycloak[Keycloak :8080] --> Order
     Keycloak --> Catalogue
     Keycloak --> Inventory
     Keycloak --> Payment
+    Keycloak --> Customer
     Order -->|HTTP part lookup| Catalogue
     Order -->|order-created| Kafka[(Kafka)]
     Kafka --> Inventory
@@ -25,6 +27,7 @@ flowchart LR
     Payment --> PaymentDb[(payment_db)]
     Catalogue --> CatalogueDb[(sparelink_catalogue)]
     Inventory --> InventoryDb[(inventory_db)]
+    Customer --> CustomerDb[(customer_db)]
 ```
 
 Each service owns its own database. The four databases run in one local PostgreSQL container only for development convenience.
@@ -49,10 +52,11 @@ Stop the local stack:
 docker compose down
 ```
 
-If you already created the PostgreSQL volume before Payment Service was added, create its database once before starting the updated stack:
+If you already created the PostgreSQL volume before Payment Service or Customer Service was added, create their databases once before starting the updated stack:
 
 ```powershell
 docker compose exec postgres createdb -U postgres payment_db
+docker compose exec postgres createdb -U postgres customer_db
 ```
 
 ## Local endpoints
@@ -66,6 +70,8 @@ docker compose exec postgres createdb -U postgres payment_db
 | Order API | http://localhost:8083 |
 | Payment API | http://localhost:8084 |
 | Payment OpenAPI | http://localhost:8084/swagger-ui/index.html |
+| Customer API | http://localhost:8085 |
+| Customer OpenAPI | http://localhost:8085/swagger-ui/index.html |
 | PostgreSQL | localhost:5435 |
 
 Health endpoints:
@@ -75,6 +81,7 @@ http://localhost:8081/actuator/health
 http://localhost:8082/actuator/health
 http://localhost:8083/actuator/health
 http://localhost:8084/actuator/health
+http://localhost:8085/actuator/health
 ```
 
 ## Keycloak development users

@@ -4,4 +4,5 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
   CREATE DATABASE sparelink_catalogue;
   CREATE DATABASE inventory_db;
   CREATE DATABASE payment_db;
+  CREATE DATABASE customer_db;
 EOSQL
