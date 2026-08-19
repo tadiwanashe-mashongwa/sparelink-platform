@@ -10,6 +10,7 @@ sequenceDiagram
     participant Kafka
     participant Inventory as Inventory Service
     participant Payment as Payment Service
+    participant Shipping as Shipping Service
 
     Customer->>Order: Create order (customer JWT)
     Order->>Catalogue: Look up requested parts and prices
@@ -23,6 +24,8 @@ sequenceDiagram
     Order->>Order: STOCK_RESERVED → PAYMENT_PENDING
     Kafka->>Payment: Consume order-created
     Payment->>Payment: Create PENDING payment
+    Kafka->>Shipping: Consume order-created
+    Shipping->>Shipping: Store order/customer context
     Customer->>Payment: Read payment (customer JWT)
     Note over Payment: Admin performs status transition
     Payment->>Kafka: Publish payment-status-changed
@@ -30,6 +33,8 @@ sequenceDiagram
     Order->>Order: PAID or PAYMENT_FAILED
     Kafka->>Inventory: Consume payment-status-changed
     Note over Inventory: Release reservation when payment fails
+    Kafka->>Shipping: Consume payment-status-changed SUCCESS
+    Shipping->>Shipping: Create one PENDING shipment
 ```
 
 ## Database ownership
@@ -128,6 +133,26 @@ erDiagram
     }
 ```
 
+```mermaid
+erDiagram
+    SHIPPING_ORDERS ||--o| SHIPMENTS : creates
+    SHIPPING_ORDERS {
+        uuid order_id PK
+        uuid customer_id
+        boolean payment_confirmed
+        bigint version
+    }
+    SHIPMENTS {
+        uuid id PK
+        uuid order_id UK
+        uuid customer_id
+        string status
+        string carrier
+        string tracking_number
+        bigint version
+    }
+```
+
 ## Testing strategy
 
 | Layer | Purpose | Technology |
@@ -154,6 +179,8 @@ cd order-service; .\mvnw.cmd test
 cd ..\catalogue-service; .\mvnw.cmd test
 cd ..\inventory-service; .\mvnw.cmd test
 cd ..\payment-service; mvn test
+cd ..\customer-service; mvn test
+cd ..\shipping-service; mvn test
 ```
 
 Each service publishes its JaCoCo coverage badge through GitHub Actions. The Payment workflow also produces the coverage report from the same `mvn test` command used locally.
