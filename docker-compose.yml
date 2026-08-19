@@ -101,11 +101,24 @@ services:
       KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/sparelink
     depends_on: [postgres, kafka, keycloak]
     ports: ["8087:8087"]
+  api-gateway:
+    build: ./api-gateway
+    environment:
+      CATALOGUE_SERVICE_URL: http://catalogue-service:8081
+      INVENTORY_SERVICE_URL: http://inventory-service:8080
+      ORDER_SERVICE_URL: http://order-service:8083
+      PAYMENT_SERVICE_URL: http://payment-service:8084
+      CUSTOMER_SERVICE_URL: http://customer-service:8085
+      SHIPPING_SERVICE_URL: http://shipping-service:8086
+      NOTIFICATION_SERVICE_URL: http://notification-service:8087
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/sparelink
+      CORS_ALLOWED_ORIGIN: http://localhost:3000
+    depends_on: [catalogue-service, inventory-service, order-service, payment-service, customer-service, shipping-service, notification-service]
+    ports: ["8088:8088"]
   frontend:
     build: ./sparelink-frontend
     depends_on:
-      - catalogue-service
-      - order-service
+      - api-gateway
     ports: ["3000:80"]
 volumes:
   sparelink-postgres-data:
