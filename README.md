@@ -13,12 +13,14 @@ flowchart LR
     Client -->|JWT| Inventory[Inventory Service :8082]
     Client -->|JWT| Customer[Customer Service :8085]
     Client -->|JWT| Shipping[Shipping Service :8086]
+    Client -->|JWT| Notification[Notification Service :8087]
     Keycloak[Keycloak :8080] --> Order
     Keycloak --> Catalogue
     Keycloak --> Inventory
     Keycloak --> Payment
     Keycloak --> Customer
     Keycloak --> Shipping
+    Keycloak --> Notification
     Order -->|HTTP part lookup| Catalogue
     Order -->|order-created| Kafka[(Kafka)]
     Kafka --> Inventory
@@ -26,15 +28,17 @@ flowchart LR
     Payment -->|payment-status-changed| Kafka
     Kafka --> Order
     Kafka --> Shipping
+    Kafka --> Notification
     Order --> OrderDb[(order_db)]
     Payment --> PaymentDb[(payment_db)]
     Catalogue --> CatalogueDb[(sparelink_catalogue)]
     Inventory --> InventoryDb[(inventory_db)]
     Customer --> CustomerDb[(customer_db)]
     Shipping --> ShippingDb[(shipping_db)]
+    Notification --> NotificationDb[(notification_db)]
 ```
 
-Each service owns its own database. The six databases run in one local PostgreSQL container only for development convenience.
+Each service owns its own database. The seven databases run in one local PostgreSQL container only for development convenience.
 
 See [the architecture guide](docs/architecture.md) for the request sequence, database ER diagrams, and testing strategy.
 
@@ -62,6 +66,7 @@ If you already created the PostgreSQL volume before Payment Service, Customer Se
 docker compose exec postgres createdb -U postgres payment_db
 docker compose exec postgres createdb -U postgres customer_db
 docker compose exec postgres createdb -U postgres shipping_db
+docker compose exec postgres createdb -U postgres notification_db
 ```
 
 ## Local endpoints
@@ -79,6 +84,7 @@ docker compose exec postgres createdb -U postgres shipping_db
 | Customer OpenAPI | http://localhost:8085/swagger-ui/index.html |
 | Shipping API | http://localhost:8086 |
 | Shipping OpenAPI | http://localhost:8086/swagger-ui/index.html |
+| Notification API | http://localhost:8087 |
 | PostgreSQL | localhost:5435 |
 
 Health endpoints:
@@ -90,6 +96,7 @@ http://localhost:8083/actuator/health
 http://localhost:8084/actuator/health
 http://localhost:8085/actuator/health
 http://localhost:8086/actuator/health
+http://localhost:8087/actuator/health
 ```
 
 ## Keycloak development users
@@ -117,6 +124,7 @@ The platform smoke test exercises this authenticated request flow:
 6. Payment Service consumes the order event and creates a pending payment.
 7. A successful payment publishes `payment-status-changed`, which transitions the order to `PAID`.
 8. Shipping Service consumes `order-created` and `payment-status-changed SUCCESS`, then creates one `PENDING` shipment.
+9. Notification Service consumes the order and successful payment events, then creates one unread `PAYMENT_SUCCEEDED` notification for the customer.
 
 The failure path is also verified: a failed payment publishes `payment-status-changed`, Order Service transitions the order to `PAYMENT_FAILED`, and Inventory releases the reservation (verified quantity: `3 → 5`).
 

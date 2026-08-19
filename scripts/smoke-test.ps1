@@ -7,6 +7,7 @@ $inventoryUrl = 'http://localhost:8082'
 $orderUrl = 'http://localhost:8083'
 $paymentUrl = 'http://localhost:8084'
 $shippingUrl = 'http://localhost:8086'
+$notificationUrl = 'http://localhost:8087'
 $clientId = 'sparelink-api'
 
 function Get-AccessToken([string]$username, [string]$password) {
@@ -24,7 +25,7 @@ function Get-JwtSubject([string]$token) {
             ConvertFrom-Json).sub
 }
 
-foreach ($endpoint in @($catalogueUrl, $inventoryUrl, $orderUrl, $paymentUrl, $shippingUrl)) {
+foreach ($endpoint in @($catalogueUrl, $inventoryUrl, $orderUrl, $paymentUrl, $shippingUrl, $notificationUrl)) {
     $health = Invoke-RestMethod -Uri "$endpoint/actuator/health"
     if ($health.status -ne 'UP') {
         throw "Service at $endpoint is not healthy."
@@ -111,6 +112,17 @@ if ($PaymentStatus -eq 'SUCCESS') {
     if ($shipment.status -ne 'PENDING') {
         throw "Expected shipment for order $($order.orderId) to be PENDING, but got $($shipment.status)."
     }
+
+    $notificationDeadline = (Get-Date).AddSeconds(30)
+    do {
+        $notifications = Invoke-RestMethod -Uri "$notificationUrl/api/notifications/unread" -Headers $customerHeaders
+        $notification = $notifications | Where-Object { $_.orderId -eq $order.orderId -and $_.type -eq 'PAYMENT_SUCCEEDED' } | Select-Object -First 1
+        if ($null -eq $notification) { Start-Sleep -Seconds 2 }
+    } while (($null -eq $notification) -and ((Get-Date) -lt $notificationDeadline))
+
+    if ($null -eq $notification) {
+        throw "Notification Service did not create a payment-success notification for order $($order.orderId)."
+    }
 }
 
 if ($PaymentStatus -eq 'FAILED') {
@@ -123,5 +135,5 @@ if ($PaymentStatus -eq 'FAILED') {
     if ($available -ne 5) { throw "Expected stock 5 after payment failure, but got $available." }
 }
 
-$shipmentSummary = if ($PaymentStatus -eq 'SUCCESS') { ', and created a PENDING shipment' } else { '' }
+$shipmentSummary = if ($PaymentStatus -eq 'SUCCESS') { ', created a PENDING shipment, and created an unread payment notification' } else { '' }
 Write-Host "Platform smoke test passed: order $($order.orderId) reserved inventory (5 -> 3), created payment $($payment.id), and reached $expectedOrderStatus$shipmentSummary."

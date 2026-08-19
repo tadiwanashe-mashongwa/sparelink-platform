@@ -91,6 +91,16 @@ services:
       KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/sparelink
     depends_on: [postgres, kafka, keycloak]
     ports: ["8086:8086"]
+  notification-service:
+    build: ./notification-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notification_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/sparelink
+    depends_on: [postgres, kafka, keycloak]
+    ports: ["8087:8087"]
   frontend:
     build: ./sparelink-frontend
     depends_on:

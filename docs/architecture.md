@@ -11,6 +11,7 @@ sequenceDiagram
     participant Inventory as Inventory Service
     participant Payment as Payment Service
     participant Shipping as Shipping Service
+    participant Notification as Notification Service
 
     Customer->>Order: Create order (customer JWT)
     Order->>Catalogue: Look up requested parts and prices
@@ -26,6 +27,8 @@ sequenceDiagram
     Payment->>Payment: Create PENDING payment
     Kafka->>Shipping: Consume order-created
     Shipping->>Shipping: Store order/customer context
+    Kafka->>Notification: Consume order-created
+    Notification->>Notification: Store order/customer context
     Customer->>Payment: Read payment (customer JWT)
     Note over Payment: Admin performs status transition
     Payment->>Kafka: Publish payment-status-changed
@@ -35,6 +38,26 @@ sequenceDiagram
     Note over Inventory: Release reservation when payment fails
     Kafka->>Shipping: Consume payment-status-changed SUCCESS
     Shipping->>Shipping: Create one PENDING shipment
+    Kafka->>Notification: Consume payment-status-changed SUCCESS
+    Notification->>Notification: Create unread payment notification
+```
+
+```mermaid
+erDiagram
+    NOTIFICATION_ORDERS ||--o{ NOTIFICATIONS : contextualizes
+    NOTIFICATION_ORDERS {
+        uuid order_id PK
+        uuid customer_id
+    }
+    NOTIFICATIONS {
+        uuid id PK
+        uuid customer_id
+        uuid order_id
+        string type
+        string message
+        boolean read
+        datetime created_at
+    }
 ```
 
 ## Database ownership
@@ -181,6 +204,7 @@ cd ..\inventory-service; .\mvnw.cmd test
 cd ..\payment-service; mvn test
 cd ..\customer-service; mvn test
 cd ..\shipping-service; mvn test
+cd ..\notification-service; mvn test
 ```
 
 Each service publishes its JaCoCo coverage badge through GitHub Actions. The Payment workflow also produces the coverage report from the same `mvn test` command used locally.

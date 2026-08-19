@@ -6,4 +6,5 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
   CREATE DATABASE payment_db;
   CREATE DATABASE customer_db;
   CREATE DATABASE shipping_db;
+  CREATE DATABASE notification_db;
 EOSQL
