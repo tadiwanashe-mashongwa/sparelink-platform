@@ -85,6 +85,7 @@ docker compose exec postgres createdb -U postgres notification_db
 | Shipping API | http://localhost:8086 |
 | Shipping OpenAPI | http://localhost:8086/swagger-ui/index.html |
 | Notification API | http://localhost:8087 |
+| Notification OpenAPI | http://localhost:8087/swagger-ui/index.html |
 | PostgreSQL | localhost:5435 |
 
 Health endpoints:
