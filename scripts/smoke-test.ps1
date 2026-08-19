@@ -6,6 +6,7 @@ $catalogueUrl = 'http://localhost:8081'
 $inventoryUrl = 'http://localhost:8082'
 $orderUrl = 'http://localhost:8083'
 $paymentUrl = 'http://localhost:8084'
+$shippingUrl = 'http://localhost:8086'
 $clientId = 'sparelink-api'
 
 function Get-AccessToken([string]$username, [string]$password) {
@@ -23,7 +24,7 @@ function Get-JwtSubject([string]$token) {
             ConvertFrom-Json).sub
 }
 
-foreach ($endpoint in @($catalogueUrl, $inventoryUrl, $orderUrl, $paymentUrl)) {
+foreach ($endpoint in @($catalogueUrl, $inventoryUrl, $orderUrl, $paymentUrl, $shippingUrl)) {
     $health = Invoke-RestMethod -Uri "$endpoint/actuator/health"
     if ($health.status -ne 'UP') {
         throw "Service at $endpoint is not healthy."
@@ -96,6 +97,22 @@ if ($updatedOrder.status -ne $expectedOrderStatus) {
     throw "Expected order $($order.orderId) to be $expectedOrderStatus, but got $($updatedOrder.status)."
 }
 
+if ($PaymentStatus -eq 'SUCCESS') {
+    $shipmentDeadline = (Get-Date).AddSeconds(30)
+    do {
+        $shipments = Invoke-RestMethod -Uri "$shippingUrl/api/shipments/me" -Headers $customerHeaders
+        $shipment = $shipments | Where-Object { $_.orderId -eq $order.orderId } | Select-Object -First 1
+        if ($null -eq $shipment) { Start-Sleep -Seconds 2 }
+    } while (($null -eq $shipment) -and ((Get-Date) -lt $shipmentDeadline))
+
+    if ($null -eq $shipment) {
+        throw "Shipping Service did not create a shipment for order $($order.orderId)."
+    }
+    if ($shipment.status -ne 'PENDING') {
+        throw "Expected shipment for order $($order.orderId) to be PENDING, but got $($shipment.status)."
+    }
+}
+
 if ($PaymentStatus -eq 'FAILED') {
     $releaseDeadline = (Get-Date).AddSeconds(30)
     do {
@@ -106,4 +123,5 @@ if ($PaymentStatus -eq 'FAILED') {
     if ($available -ne 5) { throw "Expected stock 5 after payment failure, but got $available." }
 }
 
-Write-Host "Platform smoke test passed: order $($order.orderId) reserved inventory (5 -> 3), created payment $($payment.id), and reached $expectedOrderStatus."
+$shipmentSummary = if ($PaymentStatus -eq 'SUCCESS') { ', and created a PENDING shipment' } else { '' }
+Write-Host "Platform smoke test passed: order $($order.orderId) reserved inventory (5 -> 3), created payment $($payment.id), and reached $expectedOrderStatus$shipmentSummary."
