@@ -73,6 +73,11 @@ services:
       CUSTOMER_SERVICE_URL: http://customer-service:8085
       PAYMENT_SERVICE_CLIENT_SECRET: ${PAYMENT_SERVICE_CLIENT_SECRET:?Set PAYMENT_SERVICE_CLIENT_SECRET in .env}
       PAYMENT_CALLBACK_SECRET: ${PAYMENT_CALLBACK_SECRET:?Set PAYMENT_CALLBACK_SECRET in .env}
+    depends_on:
+      - postgres
+      - kafka
+      - keycloak
+      - customer-service
     ports: ["8084:8084"]
   customer-service:
     build: ./customer-service
