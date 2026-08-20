@@ -28,6 +28,7 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:?Set KEYCLOAK_ADMIN_USERNAME in .env}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
       KC_HOSTNAME: keycloak
+      PAYMENT_SERVICE_CLIENT_SECRET: ${PAYMENT_SERVICE_CLIENT_SECRET:?Set PAYMENT_SERVICE_CLIENT_SECRET in .env}
     volumes:
       - ./order-service/keycloak/sparelink-realm.json:/opt/keycloak/data/import/sparelink-realm.json:ro
     ports: ["8080:8080"]
@@ -69,6 +70,9 @@ services:
       SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
       SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
       KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/sparelink
+      CUSTOMER_SERVICE_URL: http://customer-service:8085
+      PAYMENT_SERVICE_CLIENT_SECRET: ${PAYMENT_SERVICE_CLIENT_SECRET:?Set PAYMENT_SERVICE_CLIENT_SECRET in .env}
+      PAYMENT_CALLBACK_SECRET: ${PAYMENT_CALLBACK_SECRET:?Set PAYMENT_CALLBACK_SECRET in .env}
     ports: ["8084:8084"]
   customer-service:
     build: ./customer-service
