@@ -8,7 +8,6 @@ services:
     volumes:
       - sparelink-postgres-data:/var/lib/postgresql/data
       - ./infrastructure/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
-    ports: ["5435:5432"]
   kafka:
     image: apache/kafka-native:3.8.0
     environment:
@@ -29,44 +28,41 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
       # Browser-facing URL.  Services validate this issuer but retrieve signing keys
       # through the Docker service name below.
-      KC_HOSTNAME: localhost
+      KC_HOSTNAME: https://13.60.181.16.sslip.io
       PAYMENT_SERVICE_CLIENT_SECRET: ${PAYMENT_SERVICE_CLIENT_SECRET:?Set PAYMENT_SERVICE_CLIENT_SECRET in .env}
     volumes:
-      - ./order-service/keycloak/sparelink-realm.json:/opt/keycloak/data/import/sparelink-realm.json:ro
-    ports: ["8080:8080"]
+      - ../order-service/keycloak/sparelink-realm.json:/opt/keycloak/data/import/sparelink-realm.json:ro
+    ports: ["127.0.0.1:8080:8080"]
   catalogue-service:
-    build: ./catalogue-service
+    build: ../catalogue-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sparelink_catalogue
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/sparelink
+      KEYCLOAK_ISSUER_URI: https://13.60.181.16.sslip.io/realms/sparelink
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/sparelink/protocol/openid-connect/certs
-    ports: ["8081:8081"]
   inventory-service:
-    build: ./inventory-service
+    build: ../inventory-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/inventory_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/sparelink
+      KEYCLOAK_ISSUER_URI: https://13.60.181.16.sslip.io/realms/sparelink
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/sparelink/protocol/openid-connect/certs
-    ports: ["8082:8080"]
   order-service:
-    build: ./order-service
+    build: ../order-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/order_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/sparelink
+      KEYCLOAK_ISSUER_URI: https://13.60.181.16.sslip.io/realms/sparelink
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/sparelink/protocol/openid-connect/certs
       CATALOGUE_SERVICE_URL: http://catalogue-service:8081
-    ports: ["8083:8083"]
   payment-service:
-    build: ./payment-service
+    build: ../payment-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/payment_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
@@ -74,7 +70,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
       SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
-      KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/sparelink
+      KEYCLOAK_ISSUER_URI: https://13.60.181.16.sslip.io/realms/sparelink
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/sparelink/protocol/openid-connect/certs
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_TOKEN_URI: http://keycloak:8080/realms/sparelink/protocol/openid-connect/token
       CUSTOMER_SERVICE_URL: http://customer-service:8085
@@ -85,43 +81,39 @@ services:
       - kafka
       - keycloak
       - customer-service
-    ports: ["8084:8084"]
   customer-service:
-    build: ./customer-service
+    build: ../customer-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/customer_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/sparelink
+      KEYCLOAK_ISSUER_URI: https://13.60.181.16.sslip.io/realms/sparelink
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/sparelink/protocol/openid-connect/certs
     depends_on:
       - postgres
       - keycloak
-    ports: ["8085:8085"]
   shipping-service:
-    build: ./shipping-service
+    build: ../shipping-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shipping_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/sparelink
+      KEYCLOAK_ISSUER_URI: https://13.60.181.16.sslip.io/realms/sparelink
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/sparelink/protocol/openid-connect/certs
     depends_on: [postgres, kafka, keycloak]
-    ports: ["8086:8086"]
   notification-service:
-    build: ./notification-service
+    build: ../notification-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notification_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/sparelink
+      KEYCLOAK_ISSUER_URI: https://13.60.181.16.sslip.io/realms/sparelink
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/sparelink/protocol/openid-connect/certs
     depends_on: [postgres, kafka, keycloak]
-    ports: ["8087:8087"]
   api-gateway:
-    build: ./api-gateway
+    build: ../api-gateway
     environment:
       CATALOGUE_SERVICE_URL: http://catalogue-service:8081
       INVENTORY_SERVICE_URL: http://inventory-service:8080
@@ -130,15 +122,15 @@ services:
       CUSTOMER_SERVICE_URL: http://customer-service:8085
       SHIPPING_SERVICE_URL: http://shipping-service:8086
       NOTIFICATION_SERVICE_URL: http://notification-service:8087
-      KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/sparelink
+      KEYCLOAK_ISSUER_URI: https://13.60.181.16.sslip.io/realms/sparelink
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/sparelink/protocol/openid-connect/certs
-      CORS_ALLOWED_ORIGIN: http://localhost:3000
+      CORS_ALLOWED_ORIGIN: https://sparelink-frontend.vercel.app,https://sparelink-frontend-rc5g7hp9e-tadiwa3.vercel.app
     depends_on: [catalogue-service, inventory-service, order-service, payment-service, customer-service, shipping-service, notification-service]
-    ports: ["8088:8088"]
+    ports: ["127.0.0.1:8088:8088"]
   frontend:
-    build: ./sparelink-frontend
+    build: ../sparelink-frontend
     depends_on:
       - api-gateway
-    ports: ["3000:80"]
+    ports: ["80:80"]
 volumes:
   sparelink-postgres-data:
